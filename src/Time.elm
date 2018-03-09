@@ -1,10 +1,10 @@
 effect module Time where { subscription = MySub } exposing
   ( Posix
   , now
-  , posixToMillis
-  , millisToPosix
+  , every
   , Zone
   , utc
+  , here
   , toYear
   , toMonth
   , toDay
@@ -13,9 +13,10 @@ effect module Time where { subscription = MySub } exposing
   , toMinute
   , toSecond
   , toMillis
-  , every
   , Month(..)
   , Weekday(..)
+  , posixToMillis
+  , millisToPosix
   , customZone
   )
 
@@ -23,7 +24,7 @@ effect module Time where { subscription = MySub } exposing
 {-| Library for working with time and time zones.
 
 # Time
-@docs Posix, now, posixToMillis, millisToPosix
+@docs Posix, now, every
 
 # Time Zones
 @docs Zone, utc, here
@@ -31,14 +32,11 @@ effect module Time where { subscription = MySub } exposing
 # Human Times
 @docs toYear, toMonth, toDay, toWeekday, toHour, toMinute, toSecond, toMillis
 
-# Time Subscriptions
-@docs every
-
 # Weeks and Months
 @docs Weekday(..), Month(..)
 
-# Time Zone Builder
-@docs customZone
+# For Package Authors
+@docs posixToMillis, millisToPosix, customZone
 
 -}
 
