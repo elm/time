@@ -19,22 +19,24 @@ So to show a human being a time, you must always know **the POSIX time** and **t
 
 ## Example
 
-To figure out a human time, you need to ask two questions: (1) what POSIX time is it? and (2) what time zone am I in? So to figure out what day it is where _you_ are, you can say:
+To figure out a human time, you need to ask two questions: (1) what POSIX time is it? and (2) what time zone am I in? Once you have that, you can decide how to show it on screen:
 
 ```elm
-import Task exposing (Task)
-import Time
+import Time exposing (utc, toHour, toMinute, toSecond)
 
-whatDayIsIt : Task x Int
-whatDayIsIt =
-  Task.map2 Time.toDay Time.here Time.now
-
--- Time.toDay : Time.Zone -> Time.Posix -> Int
--- Time.here : Task x Time.Zone
--- Time.now : Task x Time.Posix
+toUtcString : Time.Posix -> String
+toUtcString time =
+  String.fromInt (toHour utc time)
+  ++ ":" ++
+  String.fromInt (toMinute utc time)
+  ++ ":" ++
+  String.fromInt (toSecond utc time)
+  ++ " (UTC)"
 ```
 
-Go [here](TODO) for an example that uses time.
+Notice that we provide the `utc` time zone to `toHour` and `toMinute`!
+
+Go [here](http://elm-lang.org/examples/time) for a little example application that uses time. It can help you get everything hooked up in practice!
 
 
 ## Recurring Events
@@ -64,6 +66,19 @@ Great! But what about shifting the meeting by one day for a holiday? Well, if yo
 Now the particular kinds of recurring events _you_ need are specific to _your_ application. Weekly? Monthly? Always has start and end of range? Allows exceptions? I am not convinced that a generic design is possible for all scenarios, but maybe with further exploration, we will find that it is.
 
 **So if you need recurring events, you got to model them yourself.** There is no shortcut. Putting May 3rd in your `Model` is not gonna do it. It is a trap. Thinking in human time is always a trap!
+
+
+## ISO 8601
+
+[ISO 8601][8601] is not supported by this package because:
+
+> The ISO 8601 format has lead to a great deal of confusion. Specifically because it gives the _illusion_ that it can handle time zones. It cannot! It allows you to specify an offset from UTC like `-05:00`, but is that a time in Quebec, Miami, Cuba, or Equador? Are they doing daylight saving time right now?
+>
+> Point is, **the only thing ISO 8601 is good for is representing a `Time.Posix`, but less memory efficient and more confusing.** So I recommend using `Time.posixToMillis` and `Time.millisToPosix` for any client/server communication you control.
+
+That said, many endpoints use ISO 8601 for some reason, and it can therefore be quite useful in practice. I think the community should make some packages that define `fromIso8601 : String -> Maybe Time.Posix` in Elm. People can use `elm-lang/parser` to make a fancy implementation, but maybe there is some faster or smaller implementation possible with `String.split` and such. Folks should experiment, and later on, we can revisit if any of them belong in this library.
+
+[8601]: https://en.wikipedia.org/wiki/ISO_8601
 
 
 ## Future Plans
