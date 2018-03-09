@@ -64,3 +64,16 @@ Great! But what about shifting the meeting by one day for a holiday? Well, if yo
 Now the particular kinds of recurring events _you_ need are specific to _your_ application. Weekly? Monthly? Always has start and end of range? Allows exceptions? I am not convinced that a generic design is possible for all scenarios, but maybe with further exploration, we will find that it is.
 
 **So if you need recurring events, you got to model them yourself.** There is no shortcut. Putting May 3rd in your `Model` is not gonna do it. It is a trap. Thinking in human time is always a trap!
+
+
+## Future Plans
+
+Right now this library gives basic `Posix` and `Zone` functions, but there are a couple important things it does not cover right now:
+
+  1. How do I get _my_ time zone?
+  2. How do I get another time zone by name?
+  3. How do I display a time for a specific region? (e.g. `DD/MM/YYYY` vs `MM/DD/YYYY`)
+
+I think points (2) and (3) should be explored by the community before we add anything here. Maybe we can have a package that hard codes the IANA time zone database? Maybe we can have a package that provides HTTP requests to ask for specific time zone data? Etc.
+
+**Note:** If you make progress that potentially needs coordination with other developers, **talk to people**. Present your work on [discourse](http://discourse.elm-lang.org/) to learn what the next steps might be. Is the idea good? Does it need more work? Are there other things to consider? Etc. Just opening an issue like “I totally redid the API” is not how we run things here, so focus on making a strong case through normal packages and friendly communication! And on timelines, we try to make one _great_ choice ever (not a _different_ choice every month) so things will take longer than in the JS world.
