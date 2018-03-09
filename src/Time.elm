@@ -36,7 +36,7 @@ effect module Time where { subscription = MySub } exposing
 @docs Weekday(..), Month(..)
 
 # For Package Authors
-@docs posixToMillis, millisToPosix, customZone
+@docs posixToMillis, millisToPosix, customZone, Era
 
 -}
 
@@ -108,6 +108,11 @@ type Zone =
   Zone String (List Era)
 
 
+{-| **Intended for package authors.**
+
+This allows you to load IANA time zone database information into the
+[`customZone`](#customZone) function.
+-}
 type alias Era =
   { start : Int
   , offset : Int
@@ -127,27 +132,23 @@ utc =
   Zone "Etc/Utc" []
 
 
-{-| **Primarily for library authors.**
+{-| **Intended for package authors.**
 
-I am proposing [a JavaScript API][api] that would allow us to expose a function
-like this:
+Eventually we want functions like `Time.here : Task x Zone` to get time zones
+from the browser, but as of this writing, we are unclear how to get that
+information 100% reliably.
 
-    here : Task x Zone
-
-Until that becomes possible, it is necessary to load information from the IANA
-time zone database yourself, and different people will want to do this in
-different ways. For example, if your users all live in one time-zone, you may
-just want to have the data in Elm. If you have users everywhere, maybe you want
-to load time zone information as needed through HTTP requests? Or all at once
-and cache it?
+So while things progress with the web platform, people need to load information
+from the IANA time zone database themselves, and different people will want to
+do this in different ways. For example, if your users all live in one time-zone,
+you may just want to have the data in Elm. If you have users everywhere, maybe
+you want to load time zone information as needed through HTTP requests? Or all
+at once and cache it?
 
 To avoid forcing everyone to use one strategy, the `customZone` function allows
 you to create a `Zone` with data you have obtained however you please. This
 means libraries can hard-code the data, provide HTTP requests, etc. and you can
 pick the strategy that is best for you.
-
-**Note:** If you prefer the `here` API, try to get TC39 to consider [this
-JavaScript API][api] for time zones!
 -}
 customZone : String -> List Era -> Maybe Zone
 customZone abbr eras =
@@ -160,10 +161,10 @@ customZone abbr eras =
 
 {-| What year is it?!
 
-    import Time exposing (millisToPosix, utc, year)
+    import Time exposing (toYear, utc, millisToPosix)
 
-    year utc (millisToPosix 0) == 1970
-    year nyc (millisToPosix 0) == 1969
+    toYear utc (millisToPosix 0) == 1970
+    toYear nyc (millisToPosix 0) == 1969
 
     -- pretend `nyc` is the `Zone` for America/New_York.
 -}
@@ -174,15 +175,15 @@ toYear zone time =
 
 {-| What month is it?!
 
-    import Time exposing (millisToPosix, month, utc)
+    import Time exposing (toMonth, utc, millisToPosix)
 
-    month utc (millisToPosix 0) == Jan
-    month nyc (millisToPosix 0) == Dec
+    toMonth utc (millisToPosix 0) == Jan
+    toMonth nyc (millisToPosix 0) == Dec
 
     -- pretend `nyc` is the `Zone` for America/New_York.
 -}
-month : Zone -> Posix -> Month
-month zone time =
+toMonth : Zone -> Posix -> Month
+toMonth zone time =
   case (toCivil (toAdjustedMinutes zone time)).month of
     1  -> Jan
     2  -> Feb
@@ -198,31 +199,32 @@ month zone time =
     _  -> Dec
 
 
-{-| What day is it?!
+{-| What day is it?! (Days go from 1 to 31)
 
-    import Time exposing (day, millisToPosix, utc)
+    import Time exposing (toDay, utc, millisToPosix)
 
-    day utc (millisToPosix 0) == 1
-    day nyc (millisToPosix 0) == 31
+    toDay utc (millisToPosix 0) == 1
+    toDay nyc (millisToPosix 0) == 31
 
     -- pretend `nyc` is the `Zone` for America/New_York.
+
 -}
-day : Zone -> Posix -> Int
-day zone time =
+toDay : Zone -> Posix -> Int
+toDay zone time =
   (toCivil (toAdjustedMinutes zone time)).day
 
 
 {-| What day of the week is it?
 
-    import Time exposing (millisToPosix, utc, weekday)
+    import Time exposing (toWeekday, utc, millisToPosix)
 
-    weekday utc (millisToPosix 0) == Thu
-    weekday nyc (millisToPosix 0) == Wed
+    toWeekday utc (millisToPosix 0) == Thu
+    toWeekday nyc (millisToPosix 0) == Wed
 
     -- pretend `nyc` is the `Zone` for America/New_York.
 -}
-weekday : Zone -> Posix -> Weekday
-weekday zone time =
+toWeekday : Zone -> Posix -> Weekday
+toWeekday zone time =
   case modBy 7 (toAdjustedMinutes zone time // (60 * 24)) of
     0 -> Thu
     1 -> Fri
@@ -233,55 +235,57 @@ weekday zone time =
     _ -> Wed
 
 
-{-| What hour is it?
+{-| What hour is it? (From 0 to 23)
 
-    import Time exposing (hour, millisToPosix, utc)
+    import Time exposing (toHour, utc, millisToPosix)
 
-    hour utc (millisToPosix 0) == 0  -- 12am
-    hour nyc (millisToPosix 0) == 19 -- 7pm
+    toHour utc (millisToPosix 0) == 0  -- 12am
+    toHour nyc (millisToPosix 0) == 19 -- 7pm
 
     -- pretend `nyc` is the `Zone` for America/New_York.
 -}
-hour : Zone -> Posix -> Int
-hour zone time =
+toHour : Zone -> Posix -> Int
+toHour zone time =
   modBy 24 (toAdjustedMinutes zone time // 60)
 
 
-{-|
-    import Time exposing (millisToPosix, minute, utc)
+{-| What minute is it? (From 0 to 59)
 
-    minute utc (millisToPosix 0) == 0
+    import Time exposing (toMinute, utc, millisToPosix)
+
+    toMinute utc (millisToPosix 0) == 0
 
 This can be different in different time zones. Some time zones are offset
-by a half-hour!
+by 30 or 45 minutes!
 -}
-minute : Zone -> Posix -> Int
-minute zone time =
+toMinute : Zone -> Posix -> Int
+toMinute zone time =
   modBy 60 (toAdjustedMinutes zone time)
 
 
-{-|
-    import Time exposing (millisToPosix, second, utc)
+{-| What second is it?
 
-    second utc (millisToPosix    0) == 0
-    second utc (millisToPosix 1234) == 1
-    second utc (millisToPosix 5678) == 5
+    import Time exposing (toSecond, utc, millisToPosix)
+
+    toSecond utc (millisToPosix    0) == 0
+    toSecond utc (millisToPosix 1234) == 1
+    toSecond utc (millisToPosix 5678) == 5
 -}
-second : Date -> Int
-second date =
-  modBy 60 (posixToMillis date.time // 1000)
+toSecond : Zone -> Posix -> Int
+toSecond _ time =
+  modBy 60 (posixToMillis time // 1000)
 
 
 {-|
-    import Time exposing (millis, millisToPosix, utc)
+    import Time exposing (toMillis, utc, millisToPosix)
 
-    millis utc (millisToPosix    0) == 0
-    millis utc (millisToPosix 1234) == 234
-    millis utc (millisToPosix 5678) == 678
+    toMillis utc (millisToPosix    0) == 0
+    toMillis utc (millisToPosix 1234) == 234
+    toMillis utc (millisToPosix 5678) == 678
 -}
-millis : Date -> Int
-millis date =
-  modBy 1000 (posixToMillis date.time)
+toMillis : Zone -> Posix -> Int
+toMillis _ time =
+  modBy 1000 (posixToMillis time)
 
 
 
@@ -322,16 +326,6 @@ toCivil minutes =
   , month = month
   , day = dayOfYear - (153 * mp + 2) // 5 + 1 -- [1, 31]
   }
-
-
-
--- TIME TRAVEL
-
-
--- getDaysInMonth : TimeZone -> Year -> Month -> List Int
--- diff : Unit -> Date -> Date -> Int
--- travel : Unit -> Int -> Date -> Date
--- type Unit = Years | Months | Days | Hours | Minutes | Seconds | Millis
 
 
 
