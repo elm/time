@@ -47,11 +47,11 @@ To properly handle recurring events, you need to create a custom `type` for your
 import Time
 
 type alias WeeklyEvent =
-  { weekday : Time.Weekday               -- which day is it on
-  , hour : Int                           -- at what hour?
-  , zone : Time.Zone                     -- what time zone is that hour in?
-  , start : Time.Posix                   -- when was the first event?
-  , exceptions : List (Int, Maybe Event) -- are there any skips?
+  { weekday : Time.Weekday                  -- which day is it on
+  , hour : Int                              -- at what hour?
+  , zone : Time.Zone                        -- what time zone is that hour in?
+  , start : Time.Posix                      -- when was the first event?
+  , exceptions : List (Int, Maybe Event)    -- are there any skips?
   }
 ```
 
