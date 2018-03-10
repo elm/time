@@ -4,7 +4,6 @@ effect module Time where { subscription = MySub } exposing
   , every
   , Zone
   , utc
-  , here
   , toYear
   , toMonth
   , toDay
@@ -17,6 +16,7 @@ effect module Time where { subscription = MySub } exposing
   , Weekday(..)
   , posixToMillis
   , millisToPosix
+  , Era
   , customZone
   )
 
@@ -27,13 +27,13 @@ effect module Time where { subscription = MySub } exposing
 @docs Posix, now, every
 
 # Time Zones
-@docs Zone, utc, here
+@docs Zone, utc
 
 # Human Times
 @docs toYear, toMonth, toDay, toWeekday, toHour, toMinute, toSecond, toMillis
 
 # Weeks and Months
-@docs Weekday(..), Month(..)
+@docs Weekday, Month
 
 # For Package Authors
 @docs posixToMillis, millisToPosix, customZone, Era
@@ -43,12 +43,12 @@ effect module Time where { subscription = MySub } exposing
 
 import Basics exposing (..)
 import Dict
-import Elm.Kernel.Scheduler
 import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Sub exposing (Sub)
+import Process
 import String exposing (String)
 import Task exposing (Task)
 
@@ -125,6 +125,10 @@ type alias Era =
 The `utc` zone has no time adjustments. It never observes daylight-saving
 time and it never shifts around based on political restructuring.
 
+To get other time zones, find (or make) a package that uses [`customZone`](#customZone)
+that helps load in IANA time zone database information. (This will be a work in
+progress as people explore how to do that best!)
+
 [UTC]: https://en.wikipedia.org/wiki/Coordinated_Universal_Time
 -}
 utc : Zone
@@ -150,9 +154,9 @@ you to create a `Zone` with data you have obtained however you please. This
 means libraries can hard-code the data, provide HTTP requests, etc. and you can
 pick the strategy that is best for you.
 -}
-customZone : String -> List Era -> Maybe Zone
-customZone abbr eras =
-  Debug.crash "TODO"
+customZone : String -> List Era -> Zone
+customZone =
+  Zone
 
 
 
@@ -377,17 +381,24 @@ type Month = Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | D
 -- SUBSCRIPTIONS
 
 
-{-|
+{-| Get the current time periodically. How often though? Well, you provide an
+interval in milliseconds (like `1000` for a second or `60 * 1000` for a minute
+or `60 * 60 * 1000` for an hour) and that is how often you get a new time!
 
-**Note:** this function is not for animation!
+Check out [this example](http://elm-lang.org/examples/time) to see how to use
+it in an application.
+
+**This function is not for animation.** Use the `elm-lang/animation-frame`
+package for that sort of thing! It syncs up with repaints and will end up
+being much smoother for any moving visuals.
 -}
-every : Unit -> Int -> (Posix -> msg) -> Sub msg
+every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
   subscription (Every interval tagger)
 
 
 type MySub msg =
-  Every Time (Time -> msg)
+  Every Float (Posix -> msg)
 
 
 subMap : (a -> b) -> MySub a -> MySub b
@@ -406,11 +417,11 @@ type alias State msg =
 
 
 type alias Processes =
-  Dict.Dict Time Platform.ProcessId
+  Dict.Dict Float Platform.ProcessId
 
 
 type alias Taggers msg =
-  Dict.Dict Time (List (Time -> msg))
+  Dict.Dict Float (List (Posix -> msg))
 
 
 init : Task Never (State msg)
@@ -418,24 +429,20 @@ init =
   Task.succeed (State Dict.empty Dict.empty)
 
 
-onEffects : Platform.Router msg Time -> List (MySub msg) -> State msg -> Task Never (State msg)
+onEffects : Platform.Router msg Float -> List (MySub msg) -> State msg -> Task Never (State msg)
 onEffects router subs {processes} =
   let
     newTaggers =
       List.foldl addMySub Dict.empty subs
 
-    leftStep interval taggers (spawnList, existingDict, killTask) =
-      (interval :: spawnList, existingDict, killTask)
+    leftStep interval taggers (spawns, existing, kills) =
+      ( interval :: spawns, existing, kills )
 
-    bothStep interval taggers id (spawnList, existingDict, killTask) =
-      (spawnList, Dict.insert interval id existingDict, killTask)
+    bothStep interval taggers id (spawns, existing, kills) =
+      ( spawns, Dict.insert interval id existing, kills )
 
-    rightStep _ id (spawnList, existingDict, killTask) =
-      ( spawnList
-      , existingDict
-      , Elm.Kernel.Scheduler.kill id
-          |> Task.andThen (\_ -> killTask)
-      )
+    rightStep _ id (spawns, existing, kills) =
+      ( spawns, existing, Task.andThen (\_ -> kills) (Process.kill id) )
 
     (spawnList, existingDict, killTask) =
       Dict.merge
@@ -461,7 +468,7 @@ addMySub (Every interval tagger) state =
       Dict.insert interval (tagger :: taggers) state
 
 
-spawnHelp : Platform.Router msg Time -> List Time -> Processes -> Task.Task x Processes
+spawnHelp : Platform.Router msg Float -> List Float -> Processes -> Task.Task x Processes
 spawnHelp router intervals processes =
   case intervals of
     [] ->
@@ -470,7 +477,7 @@ spawnHelp router intervals processes =
     interval :: rest ->
       let
         spawnTimer =
-          Elm.Kernel.Scheduler.spawn (setInterval interval (Platform.sendToSelf router interval))
+          Process.spawn (setInterval interval (Platform.sendToSelf router interval))
 
         spawnRest id =
           spawnHelp router rest (Dict.insert interval id processes)
@@ -479,7 +486,7 @@ spawnHelp router intervals processes =
           |> Task.andThen spawnRest
 
 
-onSelfMsg : Platform.Router msg Time -> Time -> State msg -> Task Never (State msg)
+onSelfMsg : Platform.Router msg Float -> Float -> State msg -> Task Never (State msg)
 onSelfMsg router interval state =
   case Dict.get interval state.taggers of
     Nothing ->
@@ -495,6 +502,6 @@ onSelfMsg router interval state =
           |> Task.andThen (\_ -> Task.succeed state)
 
 
-setInterval : Time -> Task Never () -> Task x Never
+setInterval : Float -> Task Never () -> Task x Never
 setInterval =
   Elm.Kernel.Time.setInterval
