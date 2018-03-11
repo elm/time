@@ -14,7 +14,7 @@ To work with time successfully in programming, we need three different concepts:
 [samoa]: https://en.wikipedia.org/wiki/Time_in_Samoa
 [florida]: https://www.npr.org/sections/thetwo-way/2018/03/08/591925587/
 
-So to show a human being a time, you must always know **the POSIX time** and **their time zone**. That is it. So all that “human time” crap is for your `view` function, not your `Model`.
+So to show a human being a time, you must always know **the POSIX time** and **their time zone**. That is it. So all that “human time” stuff is for your `view` function, not your `Model`.
 
 
 ## Example
@@ -65,7 +65,7 @@ Great! But what about shifting the meeting by one day for a holiday? Well, if yo
 
 Now the particular kinds of recurring events _you_ need are specific to _your_ application. Weekly? Monthly? Always has start and end of range? Allows exceptions? I am not convinced that a generic design is possible for all scenarios, but maybe with further exploration, we will find that it is.
 
-**So if you need recurring events, you got to model them yourself.** There is no shortcut. Putting May 3rd in your `Model` is not gonna do it. It is a trap. Thinking in human time is always a trap!
+**So if you need recurring events, you have to model them yourself.** There is no shortcut. Putting May 3rd in your `Model` is not gonna do it. It is a trap. Thinking in human time is always a trap!
 
 
 ## ISO 8601
