@@ -2,8 +2,11 @@ effect module Time where { subscription = MySub } exposing
   ( Posix
   , now
   , every
+  , posixToMillis
+  , millisToPosix
   , Zone
   , utc
+  , here
   , toYear
   , toMonth
   , toDay
@@ -14,20 +17,19 @@ effect module Time where { subscription = MySub } exposing
   , toMillis
   , Month(..)
   , Weekday(..)
-  , posixToMillis
-  , millisToPosix
-  , Era
   , customZone
+  , getZoneName
+  , ZoneName(..)
   )
 
 
 {-| Library for working with time and time zones.
 
 # Time
-@docs Posix, now, every
+@docs Posix, now, every, posixToMillis, millisToPosix
 
 # Time Zones
-@docs Zone, utc
+@docs Zone, utc, here
 
 # Human Times
 @docs toYear, toMonth, toDay, toWeekday, toHour, toMinute, toSecond, toMillis
@@ -36,7 +38,7 @@ effect module Time where { subscription = MySub } exposing
 @docs Weekday, Month
 
 # For Package Authors
-@docs posixToMillis, millisToPosix, customZone, Era
+@docs customZone, getZoneName, ZoneName
 
 -}
 
@@ -70,7 +72,7 @@ type Posix = Posix Int
 -}
 now : Task x Posix
 now =
-  Elm.Kernel.Time.now Posix
+  Elm.Kernel.Time.now millisToPosix
 
 
 {-| Turn a `Posix` time into the number of milliseconds since 1970 January 1
@@ -98,25 +100,34 @@ The [IANA Time Zone Database][iana] tracks things like UTC offsets and
 daylight-saving rules so that you can turn a `Posix` time into local times
 within a time zone.
 
-Did you know that in California the times change from 3pm PST to 3pm PDT to
-capture whether it is daylight-saving time? The database tracks those
-abbreviation changes too. (Tons of time zones do that actually.)
+See [`utc`](#utc), [`here`](#here), and [`Browser.Env`][env] to learn how to
+obtain `Zone` values.
 
 [iana]: https://www.iana.org/time-zones
+[env]: /packages/elm-lang/browser/latest/Browser#Env
 -}
 type Zone =
-  Zone String (List Era)
+  Zone Int (List Era)
 
 
-{-| **Intended for package authors.**
+-- TODO: add this note back to `Zone` docs when it is true
+--
+-- Did you know that in California the times change from 3pm PST to 3pm PDT to
+-- capture whether it is daylight-saving time? The database tracks those
+-- abbreviation changes too. (Tons of time zones do that actually.)
+--
 
-This allows you to load IANA time zone database information into the
-[`customZone`](#customZone) function.
+
+{-| Currently the public API only needs:
+
+- `start` is the beginning of this `Era` in "minutes since the Unix Epoch"
+- `offset` is the UTC offset of this `Era` in minutes
+
+But eventually, it will make sense to have `abbr : String` for `PST` vs `PDT`
 -}
 type alias Era =
   { start : Int
   , offset : Int
-  , abbr : String
   }
 
 
@@ -125,38 +136,39 @@ type alias Era =
 The `utc` zone has no time adjustments. It never observes daylight-saving
 time and it never shifts around based on political restructuring.
 
-To get other time zones, find (or make) a package that uses [`customZone`](#customZone)
-that helps load in IANA time zone database information. (This will be a work in
-progress as people explore how to do that best!)
-
 [UTC]: https://en.wikipedia.org/wiki/Coordinated_Universal_Time
 -}
 utc : Zone
 utc =
-  Zone "Etc/Utc" []
+  Zone 0 []
 
 
-{-| **Intended for package authors.**
+{-| Produce a `Zone` based on the current UTC offset.
 
-Eventually we want functions like `Time.here : Task x Zone` to get time zones
-from the browser, but as of this writing, we are unclear how to get that
-information 100% reliably.
+**Accuracy Note:** This function can only give time zones like `Etc/GMT+9` or
+`Etc/GMT-6`. It cannot give you `Europe/Stockholm`, `Asia/Tokyo`, or any other
+normal time zone from the [full list][tz] due to limitations in JavaScript.
+For example, if you run `here` in New York City, the resulting `Zone` will
+never be `America/New_York`. Instead you get `Etc/GMT-5` or `Etc/GMT-4`
+depending on Daylight Saving Time. So even though browsers must have internal
+access to `America/New_York` to figure out that offset, there is no public API
+to get the full information. This means the `Zone` you get from this function
+will act weird if (1) an application stays open across a Daylight Saving Time
+boundary or (2) you try to use it on historical data.
 
-So while things progress with the web platform, people need to load information
-from the IANA time zone database themselves, and different people will want to
-do this in different ways. For example, if your users all live in one time-zone,
-you may just want to have the data in Elm. If you have users everywhere, maybe
-you want to load time zone information as needed through HTTP requests? Or all
-at once and cache it?
+**Future Note:** We can improve `here` when there is good browser support for
+JavaScript functions that (1) expose the IANA time zone database and (2) let
+you ask the time zone of the computer. The committee that reviews additions to
+JavaScript is called TC39, and I encourage you to push for these capabilies! I
+cannot do it myself unfortunately.
 
-To avoid forcing everyone to use one strategy, the `customZone` function allows
-you to create a `Zone` with data you have obtained however you please. This
-means libraries can hard-code the data, provide HTTP requests, etc. and you can
-pick the strategy that is best for you.
+**Alternatives:** See the `customZone` docs to learn how to implement stopgaps.
+
+[tz]: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 -}
-customZone : String -> List Era -> Zone
-customZone =
-  Zone
+here : Task x Zone
+here =
+  Elm.Kernel.Time.here ()
 
 
 
@@ -297,21 +309,21 @@ toMillis _ time =
 
 
 toAdjustedMinutes : Zone -> Posix -> Int
-toAdjustedMinutes (Zone _ eras) time =
-  toAdjustedMinutesHelp (posixToMillis time // 60000) eras
+toAdjustedMinutes (Zone defaultOffset eras) time =
+  toAdjustedMinutesHelp defaultOffset (posixToMillis time // 60000) eras
 
 
-toAdjustedMinutesHelp : Int -> List Era -> Int
-toAdjustedMinutesHelp posixMinutes eras =
+toAdjustedMinutesHelp : Int -> Int -> List Era -> Int
+toAdjustedMinutesHelp defaultOffset posixMinutes eras =
   case eras of
     [] ->
-      posixMinutes
+      posixMinutes + defaultOffset
 
     era :: olderEras ->
       if era.start < posixMinutes then
         posixMinutes + era.offset
       else
-        toAdjustedMinutesHelp posixMinutes olderEras
+        toAdjustedMinutesHelp defaultOffset posixMinutes olderEras
 
 
 toCivil : Int -> { year : Int, month : Int, day : Int }
@@ -505,3 +517,66 @@ onSelfMsg router interval state =
 setInterval : Float -> Task Never () -> Task x Never
 setInterval =
   Elm.Kernel.Time.setInterval
+
+
+
+-- FOR PACKAGE AUTHORS
+
+
+
+{-| **Intended for package authors.**
+
+The documentation of [`here`](#here) explains that it has certain accuracy
+limitations that block on adding new APIs to JavaScript. The `customZone`
+function is a stopgap that takes:
+
+1. A default offset in minutes. So `Etc/GMT-5` is `customZone (-5 * 60) []`
+and `Etc/GMT+9` is `customZone (9 * 60) []`.
+2. A list of exceptions containing their `start` time in "minutes since the Unix
+epoch" and their `offset` in "minutes from UTC"
+
+Human times will be based on the nearest `start`, falling back on the default
+offset if the time is older than all of the exceptions.
+
+When paired with `getZoneName`, this allows you to load the real IANA time zone
+database however you want: HTTP, cache, hardcode, etc.
+
+**Note:** If you use this, please share your work in an Elm community forum!
+I am sure others would like to hear about it, and more experience reports will
+help me and the any potential TC39 proposal.
+-}
+customZone : Int -> List { start : Int, offset : Int } -> Zone
+customZone =
+  Zone
+
+
+{-| **Intended for package authors.**
+
+Use `Intl.DateTimeFormat().resolvedOptions().timeZone` to try to get names
+like `Europe/Moscow` or `America/Havana`. From there you can look it up in any
+IANA data you loaded yourself.
+-}
+getZoneName : Task x ZoneName
+getZoneName =
+  Elm.Kernel.Time.getZoneName ()
+
+
+{-| **Intended for package authors.**
+
+The `getZoneName` function relies on a JavaScript API that is not supported
+in all browsers yet, so it can return the following:
+
+    -- in more recent browsers
+    Name "Europe/Moscow"
+    Name "America/Havana"
+
+    -- in older browsers
+    Offset 180
+    Offset -300
+
+So if the real info is not available, it will tell you the current UTC offset
+in minutes, just like what `here` uses to make zones like `customZone -60 []`.
+-}
+type ZoneName
+  = Name String
+  | Offset Int
