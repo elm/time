@@ -143,7 +143,15 @@ utc =
   Zone 0 []
 
 
-{-| Produce a `Zone` based on the current UTC offset.
+{-| Produce a `Zone` based on the current UTC offset. You can use this to figure
+out what day it is where you are:
+
+    import Task exposing (Task)
+    import Time
+
+    whatDayIsIt : Task x Int
+    whatDayIsIt =
+      Task.map2 Time.toDay Time.here Time.now
 
 **Accuracy Note:** This function can only give time zones like `Etc/GMT+9` or
 `Etc/GMT-6`. It cannot give you `Europe/Stockholm`, `Asia/Tokyo`, or any other
