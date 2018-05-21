@@ -167,7 +167,7 @@ boundary or (2) you try to use it on historical data.
 **Future Note:** We can improve `here` when there is good browser support for
 JavaScript functions that (1) expose the IANA time zone database and (2) let
 you ask the time zone of the computer. The committee that reviews additions to
-JavaScript is called TC39, and I encourage you to push for these capabilies! I
+JavaScript is called TC39, and I encourage you to push for these capabilities! I
 cannot do it myself unfortunately.
 
 **Alternatives:** See the `customZone` docs to learn how to implement stopgaps.
