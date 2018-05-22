@@ -252,8 +252,8 @@ toWeekday zone time =
   case modBy 7 (toAdjustedMinutes zone time // (60 * 24)) of
     0 -> Thu
     1 -> Fri
-    2 -> Sun
-    3 -> Sat
+    2 -> Sat
+    3 -> Sun
     4 -> Mon
     5 -> Tue
     _ -> Wed
