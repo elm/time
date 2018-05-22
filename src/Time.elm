@@ -249,7 +249,7 @@ toDay zone time =
 -}
 toWeekday : Zone -> Posix -> Weekday
 toWeekday zone time =
-  case modBy 7 (toAdjustedMinutes zone time // (60 * 24)) of
+  case modBy 7 (flooredDiv (toAdjustedMinutes zone time) (60 * 24)) of
     0 -> Thu
     1 -> Fri
     2 -> Sat
@@ -270,7 +270,7 @@ toWeekday zone time =
 -}
 toHour : Zone -> Posix -> Int
 toHour zone time =
-  modBy 24 (toAdjustedMinutes zone time // 60)
+  modBy 24 (flooredDiv (toAdjustedMinutes zone time) 60)
 
 
 {-| What minute is it? (From 0 to 59)
@@ -297,7 +297,7 @@ toMinute zone time =
 -}
 toSecond : Zone -> Posix -> Int
 toSecond _ time =
-  modBy 60 (posixToMillis time // 1000)
+  modBy 60 (flooredDiv (posixToMillis time) 1000)
 
 
 {-|
@@ -318,7 +318,7 @@ toMillis _ time =
 
 toAdjustedMinutes : Zone -> Posix -> Int
 toAdjustedMinutes (Zone defaultOffset eras) time =
-  toAdjustedMinutesHelp defaultOffset (posixToMillis time // 60000) eras
+  toAdjustedMinutesHelp defaultOffset (flooredDiv (posixToMillis time) 60000) eras
 
 
 toAdjustedMinutesHelp : Int -> Int -> List Era -> Int
@@ -337,7 +337,7 @@ toAdjustedMinutesHelp defaultOffset posixMinutes eras =
 toCivil : Int -> { year : Int, month : Int, day : Int }
 toCivil minutes =
   let
-    rawDay    = (minutes // (60 * 24)) + 719468
+    rawDay    = flooredDiv minutes (60 * 24) + 719468
     era       = (if rawDay >= 0 then rawDay else rawDay - 146096) // 146097
     dayOfEra  = rawDay - era * 146097 -- [0, 146096]
     yearOfEra = (dayOfEra - dayOfEra // 1460 + dayOfEra // 36524 - dayOfEra // 146096) // 365 -- [0, 399]
@@ -350,6 +350,11 @@ toCivil minutes =
   , month = month
   , day = dayOfYear - (153 * mp + 2) // 5 + 1 -- [1, 31]
   }
+
+
+flooredDiv : Int -> Float -> Int
+flooredDiv numerator denominator =
+  floor (toFloat numerator / denominator)
 
 
 
