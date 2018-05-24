@@ -104,7 +104,7 @@ See [`utc`](#utc), [`here`](#here), and [`Browser.Env`][env] to learn how to
 obtain `Zone` values.
 
 [iana]: https://www.iana.org/time-zones
-[env]: /packages/elm-lang/browser/latest/Browser#Env
+[env]: /packages/elm/browser/latest/Browser#Env
 -}
 type Zone =
   Zone Int (List Era)
@@ -410,12 +410,14 @@ type Month = Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | D
 interval in milliseconds (like `1000` for a second or `60 * 1000` for a minute
 or `60 * 60 * 1000` for an hour) and that is how often you get a new time!
 
-Check out [this example](http://elm-lang.org/examples/time) to see how to use
+Check out [this example](https://elm-lang.org/examples/time) to see how to use
 it in an application.
 
-**This function is not for animation.** Use the `elm-lang/animation-frame`
+**This function is not for animation.** Use the [`elm/animation-frame`][af]
 package for that sort of thing! It syncs up with repaints and will end up
 being much smoother for any moving visuals.
+
+[af]: /packages/elm/animation-frame/latest
 -}
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
