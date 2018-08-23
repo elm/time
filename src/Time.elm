@@ -413,11 +413,11 @@ or `60 * 60 * 1000` for an hour) and that is how often you get a new time!
 Check out [this example](https://elm-lang.org/examples/time) to see how to use
 it in an application.
 
-**This function is not for animation.** Use the [`elm/animation-frame`][af]
-package for that sort of thing! It syncs up with repaints and will end up
+**This function is not for animation.** Use the [`onAnimationFrame`][af]
+function for that sort of thing! It syncs up with repaints and will end up
 being much smoother for any moving visuals.
 
-[af]: /packages/elm/animation-frame/latest
+[af]: /packages/elm/browser/latest/Browser-Events#onAnimationFrame
 -}
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
