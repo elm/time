@@ -100,11 +100,9 @@ The [IANA Time Zone Database][iana] tracks things like UTC offsets and
 daylight-saving rules so that you can turn a `Posix` time into local times
 within a time zone.
 
-See [`utc`](#utc), [`here`](#here), and [`Browser.Env`][env] to learn how to
-obtain `Zone` values.
+See [`utc`](#utc) and [`here`](#here) to learn how to obtain `Zone` values.
 
 [iana]: https://www.iana.org/time-zones
-[env]: /packages/elm/browser/latest/Browser#Env
 -}
 type Zone =
   Zone Int (List Era)
