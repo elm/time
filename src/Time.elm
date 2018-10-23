@@ -4,7 +4,8 @@ effect module Time where { subscription = MySub } exposing
   , every
   , posixToMillis
   , millisToPosix
-  , Zone
+  , Zone(..)
+  , Era
   , utc
   , here
   , toYear
