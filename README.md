@@ -36,7 +36,7 @@ toUtcString time =
 
 Notice that we provide the `utc` time zone to `toHour` and `toMinute`!
 
-Go [here](https://elm-lang.org/examples/time) for a little example application that uses time. It can help you get everything hooked up in practice!
+Go [here](https://guide.elm-lang.org/effects/time.html) for a little example application that uses time. It can help you get everything hooked up in practice!
 
 
 ## Recurring Events
