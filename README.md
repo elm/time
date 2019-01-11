@@ -26,11 +26,11 @@ import Time exposing (utc, toHour, toMinute, toSecond)
 
 toUtcString : Time.Posix -> String
 toUtcString time =
-  String.fromInt (toHour utc time)
+  String.padLeft 2 '0' (String.fromInt (toHour utc time))
   ++ ":" ++
-  String.fromInt (toMinute utc time)
+  String.padLeft 2 '0' (String.fromInt (toMinute utc time))
   ++ ":" ++
-  String.fromInt (toSecond utc time)
+  String.padLeft 2 '0' (String.fromInt (toSecond utc time))
   ++ " (UTC)"
 ```
 
