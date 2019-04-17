@@ -408,7 +408,7 @@ type Month = Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | D
 interval in milliseconds (like `1000` for a second or `60 * 1000` for a minute
 or `60 * 60 * 1000` for an hour) and that is how often you get a new time!
 
-Check out [this example](https://elm-lang.org/examples/time) to see how to use
+Check out [this example](https://guide.elm-lang.org/effects/time.html) to see how to use
 it in an application.
 
 **This function is not for animation.** Use the [`onAnimationFrame`][af]
