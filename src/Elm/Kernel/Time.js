@@ -2,7 +2,7 @@
 
 import Time exposing (customZone, Name, Offset)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Scheduler exposing (binding, succeed)
+import Elm.Kernel.Scheduler exposing (binding, succeed, rawSpawn)
 
 */
 
@@ -19,7 +19,7 @@ var _Time_setInterval = F2(function(interval, task)
 {
 	return __Scheduler_binding(function(callback)
 	{
-		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		var id = setInterval(function() { __Scheduler_rawSpawn(task); }, interval);
 		return function() { clearInterval(id); };
 	});
 });
