@@ -285,13 +285,15 @@ toMinute zone time =
   modBy 60 (toAdjustedMinutes zone time)
 
 
-{-| What second is it?
+{-| What second is it? (From 0 to 59)
 
     import Time exposing (toSecond, utc, millisToPosix)
 
-    toSecond utc (millisToPosix    0) == 0
-    toSecond utc (millisToPosix 1234) == 1
-    toSecond utc (millisToPosix 5678) == 5
+    toSecond utc (millisToPosix     0) == 0
+    toSecond utc (millisToPosix  1234) == 1
+    toSecond utc (millisToPosix  5678) == 5
+    toSecond utc (millisToPosix 74123) == 14
+
 -}
 toSecond : Zone -> Posix -> Int
 toSecond _ time =
