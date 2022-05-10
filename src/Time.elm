@@ -204,9 +204,12 @@ toYear zone time =
 
     -- pretend `nyc` is the `Zone` for America/New_York.
 -}
+toMonthInt : Zone -> Posix -> Int
+toMonthInt zone time = (toCivil (toAdjustedMinutes zone time)).month
+
 toMonth : Zone -> Posix -> Month
 toMonth zone time =
-  case (toCivil (toAdjustedMinutes zone time)).month of
+  case toMonthInt zone time of
     1  -> Jan
     2  -> Feb
     3  -> Mar
