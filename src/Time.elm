@@ -326,7 +326,7 @@ toAdjustedMinutesHelp defaultOffset posixMinutes eras =
       posixMinutes + defaultOffset
 
     era :: olderEras ->
-      if era.start < posixMinutes then
+      if era.start <= posixMinutes then
         posixMinutes + era.offset
       else
         toAdjustedMinutesHelp defaultOffset posixMinutes olderEras
